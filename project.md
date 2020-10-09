@@ -1,46 +1,91 @@
-Prediction Assignment Writeup
-Executive Summary
-The goal of this project is to predict the manner in which they did the exercise with the data given in the training data set. After reading and clearning data, the training data set was seperated into training and validation dataset. Then 3 different algorithms were used for modelling and the results were analyzed in terms of performance. Best models were selected, based on maximum accuracy, and used to predict the training set.
+# Prediction Assignment Writeup
 
-set seed and load packages
+
+
+
+## Executive Summary
+The goal of this project is to predict the manner in which they did the exercise with the data given in the training data set. After reading and clearning data, the training data set was seperated into training and validation dataset. Then 3 different algorithms were used for modelling and the results were analyzed in terms of performance. Best models were selected, based on maximum accuracy, and used to predict the training set. 
+
+### set seed and load packages
+
+```r
 set.seed(07012016)
 library(caret)
 library(plyr)
-data cleaning
+```
+
+### data cleaning
 Read training and testing dataset. Since some variables like time has nothing to do with the prediction, those columns were deleted from dataset
 
+```r
 trainUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 
 trainset <- read.csv(url(trainUrl), na.strings = c("NA", "#DIV/0!", ""))
 dim(trainset)
+```
+
+```
 ## [1] 19622   160
+```
+
+```r
 trainset <- trainset[,-c(1:7)]
 
 testset <- read.csv(url(testUrl), na.strings = c("NA", "#DIV/0!", ""))
 dim(testset)
+```
+
+```
 ## [1]  20 160
+```
+
+```r
 testset <- testset[,-c(1:7)]
+```
+
 Cleaning dataset was performed by removing columns with more than half NA. In addition, training dataset was split into training and validation dataset (6:4 ratio).
 
+```r
 CountNA <- sapply(colnames(trainset), function(x) ifelse(sum(is.na(trainset[,x])) > 0.5*nrow(trainset), FALSE, TRUE ))
 trainset <- trainset[, CountNA]
 dim(trainset)
+```
+
+```
 ## [1] 19622    53
+```
+
+```r
 inTrain <- createDataPartition(y=trainset$classe, p=0.6, list = FALSE)
 trainsetTrain <- trainset[inTrain,]
 trainsetTest <- trainset[-inTrain,]
 dim(trainsetTrain)
+```
+
+```
 ## [1] 11776    53
+```
+
+```r
 dim(trainsetTest)
+```
+
+```
 ## [1] 7846   53
+```
+
 3 different modeling techniques were used here, including decision tree, random forest, and boosting. Cross validation was used (k fold with K=4) and pca was used for demension reduction. The performance was calculated and shown with confusionMatrix function. It is apparent that random forest has highest accuracy (~0.99) and decision tree is worse (~0.5 accuracy).
 
+```r
 trainMC <- trainControl(method = "cv", number = 4, verboseIter=FALSE , preProcOptions="pca", allowParallel=TRUE)
 
 trainTree <- train(classe ~ ., data = trainsetTrain, method = "rpart", trControl= trainMC)
 ptrainTree <- predict(trainTree, trainsetTest) 
 confusionMatrix(ptrainTree,trainsetTest$classe)
+```
+
+```
 ## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -72,9 +117,15 @@ confusionMatrix(ptrainTree,trainsetTest$classe)
 ## Detection Rate         0.2601  0.06424  0.08782   0.0000  0.08233
 ## Detection Prevalence   0.5263  0.12567  0.26472   0.0000  0.08335
 ## Balanced Accuracy      0.7712  0.62792  0.64470   0.5000  0.72337
+```
+
+```r
 trainRf <- train(classe ~ ., data = trainsetTrain, method = "rf", trControl= trainMC)
 ptrainRf <- predict(trainRf, trainsetTest) 
 confusionMatrix(ptrainRf,trainsetTest$classe)
+```
+
+```
 ## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -106,7 +157,13 @@ confusionMatrix(ptrainRf,trainsetTest$classe)
 ## Detection Rate         0.2838   0.1921   0.1718   0.1617   0.1826
 ## Detection Prevalence   0.2851   0.1939   0.1741   0.1639   0.1830
 ## Balanced Accuracy      0.9980   0.9953   0.9913   0.9921   0.9966
+```
+
+```r
 trainBoosting <- train(classe ~ ., data = trainsetTrain, method = "gbm", trControl= trainMC)
+```
+
+```
 ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
 ##      1        1.6094             nan     0.1000    0.1291
 ##      2        1.5232             nan     0.1000    0.0863
@@ -366,8 +423,14 @@ trainBoosting <- train(classe ~ ., data = trainsetTrain, method = "gbm", trContr
 ##    120        0.2210             nan     0.1000    0.0023
 ##    140        0.1880             nan     0.1000    0.0016
 ##    150        0.1744             nan     0.1000    0.0015
+```
+
+```r
 ptrainBoosting <- predict(trainBoosting, trainsetTest)
 confusionMatrix(ptrainBoosting,trainsetTest$classe)
+```
+
+```
 ## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -399,9 +462,16 @@ confusionMatrix(ptrainBoosting,trainsetTest$classe)
 ## Detection Rate         0.2794   0.1823   0.1648   0.1580   0.1761
 ## Detection Prevalence   0.2849   0.1956   0.1772   0.1643   0.1781
 ## Balanced Accuracy      0.9872   0.9627   0.9651   0.9784   0.9780
+```
+
 Random forest was used here for final prediction on test dataset since it has highest accuracy, verified with validation dataset.
 
+```r
 pfinaltest <- predict(trainRf, testset)
 pfinaltest
+```
+
+```
 ##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E
+```
